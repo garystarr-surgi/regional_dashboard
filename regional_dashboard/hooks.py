@@ -6,8 +6,8 @@ app_description = "Regional Dashboard"
 app_license = "MIT"
 # The default module for this app, which is also the module under which
 # the report will be created in the UI.
-app_include_js = "/assets/regional_dashboard/js/regional_dashboard.js"
-app_include_css = "/assets/regional_dashboard/css/regional_dashboard.css"
+# app_include_js = "/assets/regional_dashboard/js/regional_dashboard.js"
+# app_include_css = "/assets/regional_dashboard/css/regional_dashboard.css"
 
 # Reports
 # -------
