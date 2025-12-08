@@ -18,7 +18,7 @@ required_reports = [
         "name": "Sales Target Achievement",
         "doctype": "Sales Person",
         "is_standard": "Yes", # Links to the script files
-        "module": "Regional Dashboard",
+        "module": "Selling",
         "report_type": "Script Report"
     }
 ]
