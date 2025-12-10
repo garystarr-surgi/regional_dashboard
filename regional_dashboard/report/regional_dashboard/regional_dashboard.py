@@ -10,6 +10,10 @@ def execute(filters=None):
     columns = get_columns()
     data = get_data(filters)
     
+    # Ensure we always return a list, even if empty
+    if data is None:
+        data = []
+    
     return columns, data
 
 def get_columns():
@@ -76,6 +80,10 @@ def get_data(filters):
         fields=["name"],
         order_by="name asc"
     )
+    
+    # Return empty list if no sales persons found
+    if not sales_persons:
+        return []
     
     data = []
     
