@@ -89,8 +89,8 @@ def get_data(filters):
         sales_goal = 0  # Products target
         sil_goal = 0    # SIL target
         
-        if sp_doc.target_detail:  # Assuming child table field name is target_detail
-            for target in sp_doc.target_detail:
+        if sp_doc.targets:  # Child table field name is "targets"
+            for target in sp_doc.targets:
                 if target.item_group == "SIL":
                     sil_goal += flt(target.target_amount)
                 elif target.item_group == "Products":
