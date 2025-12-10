@@ -82,23 +82,19 @@ def get_data(filters):
     for sp in sales_persons:
         sales_person_name = sp.name
         
-        # Get Sales Person doc to access targets
+        # Get Sales Person doc to access Target Detail child table
         sp_doc = frappe.get_doc("Sales Person", sales_person_name)
         
-        # Get targets from Sales Person Targets child table
-        sales_goal = 0
-        sil_goal = 0
+        # Get targets from Target Detail child table
+        sales_goal = 0  # Products target
+        sil_goal = 0    # SIL target
         
-        if sp_doc.targets:
-            for target in sp_doc.targets:
-                # You may need to add date filtering here based on fiscal year
-                # For now, we'll sum all targets
-                sales_goal += flt(target.target_amount)
-                
-                # If there's a separate SIL target field, use it
-                # Adjust field name as needed
-                if hasattr(target, 'sil_target_amount'):
-                    sil_goal += flt(target.sil_target_amount)
+        if sp_doc.target_detail:  # Assuming child table field name is target_detail
+            for target in sp_doc.target_detail:
+                if target.item_group == "SIL":
+                    sil_goal += flt(target.target_amount)
+                elif target.item_group == "Products":
+                    sales_goal += flt(target.target_amount)
         
         # Get actual total sales for this sales person
         total_sales = get_sales_for_person(sales_person_name, filters)
