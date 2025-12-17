@@ -6,7 +6,7 @@ REPORT_NAME = "Regional Dashboard"
 # NOTE: This script is executed via frappe.utils.safe_exec.safe_exec, where imports are blocked
 # (builtins.__import__ is removed). So: NO "import frappe" inside the script.
 SAFE_EXEC_REPORT_SCRIPT = r"""
-def _flt(val):
+def flt(val):
     try:
         return float(val or 0)
     except Exception:
@@ -57,14 +57,14 @@ def get_data(filters):
         )
         targets = frappe.db.sql(targets_query, {"sales_person": sales_person_name}, as_dict=1)
 
-        sales_goal = _flt(targets[0].get("sales_goal")) if targets else 0
-        sil_goal = _flt(targets[0].get("sil_goal")) if targets else 0
+        sales_goal = flt(targets[0].get("sales_goal")) if targets else 0
+        sil_goal = flt(targets[0].get("sil_goal")) if targets else 0
 
         total_sales = get_sales_for_person(sales_person_name, filters)
         current_sil = get_sil_sales_for_person(sales_person_name, filters)
 
-        sales_goal_percent = f"{round((_flt(total_sales) / _flt(sales_goal) * 100), 2)}%" if sales_goal > 0 else "0%"
-        sil_goal_percent = f"{round((_flt(current_sil) / _flt(sil_goal) * 100), 2)}%" if sil_goal > 0 else "0%"
+        sales_goal_percent = f"{round((flt(total_sales) / flt(sales_goal) * 100), 2)}%" if sales_goal > 0 else "0%"
+        sil_goal_percent = f"{round((flt(current_sil) / flt(sil_goal) * 100), 2)}%" if sil_goal > 0 else "0%"
 
         data.append(
             {
@@ -105,7 +105,7 @@ def get_sales_for_person(sales_person, filters):
     )
     result = frappe.db.sql(sales_query, values, as_dict=1)
 
-    return _flt(result[0].get("total")) if result else 0
+    return flt(result[0].get("total")) if result else 0
 
 
 def get_sil_sales_for_person(sales_person, filters):
@@ -135,7 +135,7 @@ def get_sil_sales_for_person(sales_person, filters):
     )
     result = frappe.db.sql(sil_query, values, as_dict=1)
 
-    return _flt(result[0].get("total")) if result else 0
+    return flt(result[0].get("total")) if result else 0
 """
 
 
