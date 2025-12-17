@@ -140,31 +140,42 @@ def get_sil_sales_for_person(sales_person, filters):
 
 
 def _upsert_report():
+    """
+    Ensure the report exists and is runnable on managed/cloud setups.
+
+    Important: if a Report already exists and is marked standard, Frappe blocks edits via
+    `doc.save()` (even if you set is_standard="No") by comparing the DB value. So we use
+    direct DB updates to avoid validation errors and to "de-standardize" it.
+    """
+
+    values = {
+        "report_type": "Script Report",
+        "ref_doctype": "Sales Person",
+        # Keep as custom (non-standard) so it doesn't depend on modules.txt / module_app mapping.
+        "is_standard": "No",
+        "module": "Selling",
+        # Critical: avoid imports inside safe_exec by shipping a script without import statements.
+        "report_script": SAFE_EXEC_REPORT_SCRIPT.strip(),
+        "javascript": "",
+        "disabled": 0,
+    }
+
     if frappe.db.exists("Report", REPORT_NAME):
-        report = frappe.get_doc("Report", REPORT_NAME)
-    else:
-        report = frappe.new_doc("Report")
-        # Doctype Report uses report_name as its name in most setups.
-        report.report_name = REPORT_NAME
+        # Update fields directly (bypass validate that blocks standard report edits).
+        frappe.db.set_value("Report", REPORT_NAME, values, update_modified=False)
+        return
 
-    report.report_type = "Script Report"
-    report.ref_doctype = "Sales Person"
-
-    # Keep as custom (non-standard) so it doesn't depend on modules.txt / module_app mapping.
-    report.is_standard = "No"
-    report.module = "Selling"
-
-    # Critical: avoid imports inside safe_exec by shipping a script without import statements.
-    report.report_script = SAFE_EXEC_REPORT_SCRIPT.strip()
-    report.javascript = ""
-    report.disabled = 0
+    report = frappe.new_doc("Report")
+    report.report_name = REPORT_NAME
+    for k, v in values.items():
+        report.set(k, v)
 
     # Roles: only include roles that exist on ERPNext by default.
     report.set("roles", [])
     for role in ("Sales User", "Sales Manager"):
         report.append("roles", {"role": role})
 
-    report.save(ignore_permissions=True)
+    report.insert(ignore_permissions=True)
 
 
 def after_migrate():
