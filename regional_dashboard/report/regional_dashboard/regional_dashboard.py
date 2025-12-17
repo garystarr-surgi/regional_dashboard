@@ -10,10 +10,6 @@ def execute(filters=None):
     columns = get_columns()
     data = get_data(filters)
     
-    # Debug logging
-    frappe.log_error(f"Regional Dashboard - Filters: {filters}", "Regional Dashboard Debug")
-    frappe.log_error(f"Regional Dashboard - Data rows: {len(data) if data else 0}", "Regional Dashboard Debug")
-    
     # Ensure we always return a list, even if empty
     if data is None:
         data = []
@@ -72,7 +68,7 @@ def get_columns():
 
 def get_data(filters):
     """
-    Fetch and return report data
+    Fetch and return report data - SIMPLIFIED FOR TESTING
     """
     if not filters:
         filters = {}
@@ -85,121 +81,22 @@ def get_data(filters):
         order_by="name asc"
     )
     
-    frappe.log_error(f"Found {len(sales_persons)} sales persons", "Regional Dashboard Debug")
-    
     # Return empty list if no sales persons found
     if not sales_persons:
-        frappe.log_error("No sales persons found!", "Regional Dashboard Debug")
         return []
     
     data = []
     
+    # Just return sales person names with dummy data to test
     for sp in sales_persons:
-        sales_person_name = sp.name
-        
-        try:
-            # Get Sales Person doc to access Target Detail child table
-            sp_doc = frappe.get_doc("Sales Person", sales_person_name)
-            
-            # Get targets from Target Detail child table
-            sales_goal = 0  # Products target
-            sil_goal = 0    # SIL target
-            
-            if sp_doc.targets:  # Child table field name is "targets"
-                for target in sp_doc.targets:
-                    if target.item_group == "SIL":
-                        sil_goal += flt(target.target_amount)
-                    elif target.item_group == "Products":
-                        sales_goal += flt(target.target_amount)
-            
-            # Get actual total sales for this sales person
-            total_sales = get_sales_for_person(sales_person_name, filters)
-            
-            # Get SIL sales (items in SIL Item Group)
-            current_sil = get_sil_sales_for_person(sales_person_name, filters)
-            
-            # Calculate percentages
-            sales_goal_percent = (flt(total_sales) / flt(sales_goal) * 100) if sales_goal > 0 else 0
-            sil_goal_percent = (flt(current_sil) / flt(sil_goal) * 100) if sil_goal > 0 else 0
-            
-            data.append({
-                "sales_person": sales_person_name,
-                "total_sales": total_sales,
-                "sales_goal": sales_goal,
-                "current_sil": current_sil,
-                "sil_goal": sil_goal,
-                "sales_goal_percent": sales_goal_percent,
-                "sil_goal_percent": sil_goal_percent
-            })
-            
-        except Exception as e:
-            frappe.log_error(f"Error processing {sales_person_name}: {str(e)}", "Regional Dashboard Error")
-            continue
+        data.append({
+            "sales_person": sp.name,
+            "total_sales": 1000,
+            "sales_goal": 5000,
+            "current_sil": 500,
+            "sil_goal": 2000,
+            "sales_goal_percent": 20,
+            "sil_goal_percent": 25
+        })
     
-    frappe.log_error(f"Returning {len(data)} data rows", "Regional Dashboard Debug")
     return data
-
-def get_sales_for_person(sales_person, filters):
-    """
-    Get total sales for a sales person
-    """
-    conditions = []
-    values = {"sales_person": sales_person}
-    
-    # Add date filters if provided
-    if filters.get("from_date"):
-        conditions.append("si.posting_date >= %(from_date)s")
-        values["from_date"] = filters.get("from_date")
-    
-    if filters.get("to_date"):
-        conditions.append("si.posting_date <= %(to_date)s")
-        values["to_date"] = filters.get("to_date")
-    
-    where_clause = ""
-    if conditions:
-        where_clause = "AND " + " AND ".join(conditions)
-    
-    result = frappe.db.sql(f"""
-        SELECT SUM(si.grand_total) as total
-        FROM `tabSales Invoice` si
-        INNER JOIN `tabSales Team` st ON st.parent = si.name
-        WHERE si.docstatus = 1
-            AND st.sales_person = %(sales_person)s
-            {where_clause}
-    """, values, as_dict=1)
-    
-    return flt(result[0].total) if result and result[0].total else 0
-
-def get_sil_sales_for_person(sales_person, filters):
-    """
-    Get SIL sales for a sales person (items in SIL Item Group)
-    """
-    conditions = []
-    values = {"sales_person": sales_person}
-    
-    # Add date filters if provided
-    if filters.get("from_date"):
-        conditions.append("si.posting_date >= %(from_date)s")
-        values["from_date"] = filters.get("from_date")
-    
-    if filters.get("to_date"):
-        conditions.append("si.posting_date <= %(to_date)s")
-        values["to_date"] = filters.get("to_date")
-    
-    where_clause = ""
-    if conditions:
-        where_clause = "AND " + " AND ".join(conditions)
-    
-    result = frappe.db.sql(f"""
-        SELECT SUM(sii.amount) as total
-        FROM `tabSales Invoice` si
-        INNER JOIN `tabSales Team` st ON st.parent = si.name
-        INNER JOIN `tabSales Invoice Item` sii ON sii.parent = si.name
-        INNER JOIN `tabItem` item ON item.name = sii.item_code
-        WHERE si.docstatus = 1
-            AND st.sales_person = %(sales_person)s
-            AND item.item_group = 'SIL'
-            {where_clause}
-    """, values, as_dict=1)
-    
-    return flt(result[0].total) if result and result[0].total else 0
