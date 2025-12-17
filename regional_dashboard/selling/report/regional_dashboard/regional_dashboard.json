@@ -3,13 +3,6 @@
  "disabled": 0,
  "docstatus": 0,
  "doctype": "Report",
- "is_standard": "Yes",
- "module": "Selling",
- "name": "Regional Dashboard",
- "ref_doctype": "Sales Person",
- "report_name": "Regional Dashboard",
- "report_type": "Query Report",
- "columns": [],
  "filters": [
   {
    "fieldname": "from_date",
@@ -24,5 +17,12 @@
    "reqd": 0
   }
  ],
- "query": "SELECT \n    sp.name as 'Sales Person:Link/Sales Person:180',\n    COALESCE(sales_data.total_sales, 0) as 'Total Sales:Currency:130',\n    COALESCE(targets.sales_goal, 0) as 'Sales Goal:Currency:130',\n    COALESCE(sil_data.current_sil, 0) as 'Current SIL:Currency:130',\n    COALESCE(targets.sil_goal, 0) as 'SIL Goal:Currency:130',\n    CASE \n        WHEN COALESCE(targets.sales_goal, 0) > 0 \n        THEN (COALESCE(sales_data.total_sales, 0) / targets.sales_goal * 100)\n        ELSE 0 \n    END as 'Sales Goal %:Percent:120',\n    CASE \n        WHEN COALESCE(targets.sil_goal, 0) > 0 \n        THEN (COALESCE(sil_data.current_sil, 0) / targets.sil_goal * 100)\n        ELSE 0 \n    END as 'SIL Goal %:Percent:120'\nFROM \n    `tabSales Person` sp\nLEFT JOIN (\n    SELECT \n        st.sales_person,\n        SUM(si.grand_total) as total_sales\n    FROM `tabSales Invoice` si\n    INNER JOIN `tabSales Team` st ON st.parent = si.name\n    WHERE si.docstatus = 1\n        AND (%(from_date)s IS NULL OR si.posting_date >= %(from_date)s)\n        AND (%(to_date)s IS NULL OR si.posting_date <= %(to_date)s)\n    GROUP BY st.sales_person\n) as sales_data ON sales_data.sales_person = sp.name\nLEFT JOIN (\n    SELECT \n        st.sales_person,\n        SUM(sii.amount) as current_sil\n    FROM `tabSales Invoice` si\n    INNER JOIN `tabSales Team` st ON st.parent = si.name\n    INNER JOIN `tabSales Invoice Item` sii ON sii.parent = si.name\n    INNER JOIN `tabItem` item ON item.name = sii.item_code\n    WHERE si.docstatus = 1\n        AND item.item_group = 'SIL'\n        AND (%(from_date)s IS NULL OR si.posting_date >= %(from_date)s)\n        AND (%(to_date)s IS NULL OR si.posting_date <= %(to_date)s)\n    GROUP BY st.sales_person\n) as sil_data ON sil_data.sales_person = sp.name\nLEFT JOIN (\n    SELECT \n        parent as sales_person,\n        SUM(CASE WHEN item_group = 'Products' THEN target_amount ELSE 0 END) as sales_goal,\n        SUM(CASE WHEN item_group = 'SIL' THEN target_amount ELSE 0 END) as sil_goal\n    FROM `tabTarget Detail`\n    GROUP BY parent\n) as targets ON targets.sales_person = sp.name\nWHERE \n    sp.enabled = 1\nORDER BY \n    sp.name"
+ "is_standard": "Yes",
+ "module": "Selling",
+ "name": "Regional Dashboard",
+ "ref_doctype": "Sales Person",
+ "report_name": "Regional Dashboard",
+ "report_type": "Script Report"
 }
+
+
