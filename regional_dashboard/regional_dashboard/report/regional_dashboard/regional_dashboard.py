@@ -104,8 +104,8 @@ def get_data(filters):
             as_dict=1,
         )
 
-        sales_goal = flt(targets[0].sales_goal) if targets and targets[0].sales_goal else 0
-        sil_goal = flt(targets[0].sil_goal) if targets and targets[0].sil_goal else 0
+        sales_goal = flt(targets[0].get("sales_goal")) if targets and targets[0].get("sales_goal") else 0
+        sil_goal = flt(targets[0].get("sil_goal")) if targets and targets[0].get("sil_goal") else 0
 
         # Get actual total sales for this sales person
         total_sales = get_sales_for_person(sales_person_name, filters)
