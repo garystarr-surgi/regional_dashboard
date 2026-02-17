@@ -3,10 +3,7 @@ import frappe
 
 REPORT_NAME = "Regional Dashboard"
 
-# NOTE: This script is executed via frappe.utils.safe_exec.safe_exec, where imports are blocked
-# (builtins.__import__ is removed). So: NO "import frappe" inside the script.
-SAFE_EXEC_REPORT_SCRIPT = r"""
-SAFE_EXEC_REPORT_SCRIPT = r"""
+SAFE_EXEC_REPORT_SCRIPT = """
 def flt(val):
     try:
         return float(val or 0)
@@ -50,13 +47,11 @@ def get_data(filters):
         sales_person_name = sp.get("name") if isinstance(sp, dict) else getattr(sp, "name", sp)
 
         targets = frappe.db.sql(
-            """
-            SELECT
-                SUM(CASE WHEN item_group = 'Products' THEN target_amount ELSE 0 END) as sales_goal,
-                SUM(CASE WHEN item_group = 'SIL' THEN target_amount ELSE 0 END) as sil_goal
-            FROM `tabTarget Detail`
-            WHERE parent = %(sales_person)s
-            """,
+            "SELECT"
+            " SUM(CASE WHEN item_group = 'Products' THEN target_amount ELSE 0 END) as sales_goal,"
+            " SUM(CASE WHEN item_group = 'SIL' THEN target_amount ELSE 0 END) as sil_goal"
+            " FROM `tabTarget Detail`"
+            " WHERE parent = %(sales_person)s",
             {"sales_person": sales_person_name},
             as_dict=1,
         )
@@ -98,14 +93,12 @@ def get_sales_for_person(sales_person, filters):
     where_clause = ("AND " + " AND ".join(conditions)) if conditions else ""
 
     result = frappe.db.sql(
-        """
-        SELECT SUM(si.grand_total) as total
-        FROM `tabSales Invoice` si
-        INNER JOIN `tabSales Team` st ON st.parent = si.name
-        WHERE si.docstatus = 1
-            AND st.sales_person = %(sales_person)s
-        """
-        + (where_clause if where_clause else ""),
+        "SELECT SUM(si.grand_total) as total"
+        " FROM `tabSales Invoice` si"
+        " INNER JOIN `tabSales Team` st ON st.parent = si.name"
+        " WHERE si.docstatus = 1"
+        " AND st.sales_person = %(sales_person)s "
+        + where_clause,
         values,
         as_dict=1,
     )
@@ -128,17 +121,15 @@ def get_sil_sales_for_person(sales_person, filters):
     where_clause = ("AND " + " AND ".join(conditions)) if conditions else ""
 
     result = frappe.db.sql(
-        """
-        SELECT SUM(sii.amount) as total
-        FROM `tabSales Invoice` si
-        INNER JOIN `tabSales Team` st ON st.parent = si.name
-        INNER JOIN `tabSales Invoice Item` sii ON sii.parent = si.name
-        INNER JOIN `tabItem` item ON item.name = sii.item_code
-        WHERE si.docstatus = 1
-            AND st.sales_person = %(sales_person)s
-            AND item.item_group = 'SIL'
-        """
-        + (where_clause if where_clause else ""),
+        "SELECT SUM(sii.amount) as total"
+        " FROM `tabSales Invoice` si"
+        " INNER JOIN `tabSales Team` st ON st.parent = si.name"
+        " INNER JOIN `tabSales Invoice Item` sii ON sii.parent = si.name"
+        " INNER JOIN `tabItem` item ON item.name = sii.item_code"
+        " WHERE si.docstatus = 1"
+        " AND st.sales_person = %(sales_person)s"
+        " AND item.item_group = 'SIL' "
+        + where_clause,
         values,
         as_dict=1,
     )
@@ -148,28 +139,17 @@ def get_sil_sales_for_person(sales_person, filters):
 
 
 def _upsert_report():
-    """
-    Ensure the report exists and is runnable on managed/cloud setups.
-
-    Important: if a Report already exists and is marked standard, Frappe blocks edits via
-    `doc.save()` (even if you set is_standard="No") by comparing the DB value. So we use
-    direct DB updates to avoid validation errors and to "de-standardize" it.
-    """
-
     values = {
         "report_type": "Script Report",
         "ref_doctype": "Sales Person",
-        # Keep as custom (non-standard) so it doesn't depend on modules.txt / module_app mapping.
         "is_standard": "No",
         "module": "Custom",
-        # Critical: avoid imports inside safe_exec by shipping a script without import statements.
         "report_script": SAFE_EXEC_REPORT_SCRIPT.strip(),
         "javascript": "",
         "disabled": 0,
     }
 
     if frappe.db.exists("Report", REPORT_NAME):
-        # Update fields directly (bypass validate that blocks standard report edits).
         frappe.db.set_value("Report", REPORT_NAME, values, update_modified=False)
         return
 
@@ -178,7 +158,6 @@ def _upsert_report():
     for k, v in values.items():
         report.set(k, v)
 
-    # Roles: only include roles that exist on ERPNext by default.
     report.set("roles", [])
     for role in ("Sales User", "Sales Manager"):
         report.append("roles", {"role": role})
@@ -187,10 +166,10 @@ def _upsert_report():
 
 
 def after_migrate():
-    # Keep it safe on fresh installs where ERPNext might not be ready.
     try:
         _upsert_report()
     except Exception:
-        frappe.log_error(frappe.get_traceback(), "regional_dashboard: failed to upsert Regional Dashboard report")
-
-
+        frappe.log_error(
+            frappe.get_traceback(),
+            "regional_dashboard: failed to upsert Regional Dashboard report"
+        )
