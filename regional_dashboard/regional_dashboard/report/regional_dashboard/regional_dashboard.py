@@ -89,7 +89,7 @@ def get_data(filters):
     data = []
 
     for sp in sales_persons:
-        sales_person_name = sp.name
+        sales_person_name = sp.get("name") if isinstance(sp, dict) else getattr(sp, "name", sp)
 
         # Get targets from Target Detail child table
         targets = frappe.db.sql(
@@ -169,7 +169,7 @@ def get_sales_for_person(sales_person, filters):
         as_dict=1,
     )
 
-    return flt(result[0].total) if result and result[0].total else 0
+    return flt(result[0].get("total")) if result and result[0].get("total") else 0
 
 
 def get_sil_sales_for_person(sales_person, filters):
@@ -208,6 +208,4 @@ def get_sil_sales_for_person(sales_person, filters):
         as_dict=1,
     )
 
-    return flt(result[0].total) if result and result[0].total else 0
-
-
+    return flt(result[0].get("total")) if result and result[0].get("total") else 0
