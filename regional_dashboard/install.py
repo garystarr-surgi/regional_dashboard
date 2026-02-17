@@ -153,7 +153,7 @@ def _upsert_report():
         "ref_doctype": "Sales Person",
         # Keep as custom (non-standard) so it doesn't depend on modules.txt / module_app mapping.
         "is_standard": "No",
-        "module": "Selling",
+        "module": "Custom",
         # Critical: avoid imports inside safe_exec by shipping a script without import statements.
         "report_script": SAFE_EXEC_REPORT_SCRIPT.strip(),
         "javascript": "",
